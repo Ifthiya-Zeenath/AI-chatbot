@@ -1,17 +1,18 @@
 import streamlit as st
 from google import genai
 from google.genai import types
+from streamlit_mic_recorder import mic_recorder
 
 st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 
-st.title("🍳 CookIN — Your Personal Culinary Assistant")
+st.title("CookIN — Your Personal Culinary Assistant")
 
 # 1. Initialize the Gemini Client
 # Replace with your actual key from Google AI Studio
-client = genai.Client(api_key="AQ.Ab8RN6K9cmCtV4dSs87mkBjph-bCUSQ8z5nmSTrQu-Rc8EcMuQ")
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. Sidebar Setup for Local Ingredients Search
-st.sidebar.header("🛒 Kitchen Pantry")
+st.sidebar.header("Kitchen Pantry")
 st.sidebar.write("Select the items you have available, and CookIN will suggest what you can prepare!")
 
 # Define a collection of common local ingredients
@@ -30,6 +31,8 @@ selected_ingredients = st.sidebar.multiselect(
 
 # Optional: Allow the user to type custom ingredients not in the list
 custom_ingredients = st.sidebar.text_input("Any other ingredients? (comma-separated):")
+st.sidebar.markdown("___")
+st.sidebar.write("Or describe your ingredients by voice:")
 
 # Combine all ingredients into a clean string format
 all_ingredients = list(selected_ingredients)
@@ -48,8 +51,24 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 4. Core Logic: Process Inputs (Either Sidebar Button OR Standard Chat Input)
+# 4. Create a Fixed Bottom Container for the Typing Interface
+with st.container():
+    col_mic, col_text = st.columns([1, 5])
+    
+    # Split the row into two columns: 1 part for the mic button, 5 parts for the text input 
+    with col_mic:
+        audio_input = mic_recorder(
+            start_prompt="Speak",
+            stop_prompt="Stop",
+            key="pantry_audio_main"
+        )
+
+    with col_text:
+        chat_input = st.chat_input("Ask CookIN for a recipe, next steps, or cooking tips...")
+
+# 5. Core Logic: Process Inputs (Either Sidebar Button OR Standard Chat Input)
 user_intent = None
+audio_payload = None
 
 # Case A: User clicked the pantry suggestion button
 if suggest_recipe_clicked:
@@ -60,10 +79,18 @@ if suggest_recipe_clicked:
         st.sidebar.warning("Please select or type at least one ingredient first!")
 
 # Case B: User typed directly into the standard chat bar
-elif chat_input := st.chat_input("Ask CookIN for a recipe or cooking tip..."):
+elif audio_input and "bytes" in audio_input and audio_input["bytes"]:
+    user_intent = "*Sent a voice pantry update*"
+    audio_payload = genai.types.Part.from_bytes(
+        data=audio_input["bytes"],
+        mime_type="audio/webm"
+    )
+
+# Case C: User typed directly into the text chat bar at the bottom
+elif chat_input:
     user_intent = chat_input
 
-# 5. Execute AI Generation If There Is An Active Intent
+# 6. Execute AI Generation If There Is An Active Intent
 if user_intent:
     # Display the user prompt in the chat container
     with st.chat_message("user"):
@@ -83,6 +110,18 @@ if user_intent:
             )
         )
 
+    if audio_payload:
+        contents_payload.append(
+            genai.types.Content(
+                role="user",
+                parts=[genai.types.Part.from_text(
+                    text="Please analyze this audio data to figure out my kitchen ingredients or query, then provide a tailored localized recipe response."
+                    ),
+                    audio_payload
+                ]
+            )
+        )
+
     # Display assistant response block
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
@@ -90,14 +129,14 @@ if user_intent:
         
         # System Instruction tailored to respect pantry constraints
         cookin_persona = (
-            "Role: You are CookIN, an expert, friendly culinary chef specializing in detailed cooking instructions. "
-            "Your main focus is providing step-by-step cooking guidance and localized recipes.\n\n"
-            "Formatting & Ingestion Rules:\n"
-            "1. When a user provides a specific list of available kitchen pantry ingredients, prioritize suggesting localized recipes that heavily utilize those ingredients.\n"
-            "2. It is fine to assume common, standard kitchen staples are available (like salt, water, or basic oil), but highlight any missing primary ingredients clearly if they are needed.\n"
-            "3. When presenting a recipe, always provide an 'Estimated Time' and a structured 'Ingredients List' with clear quantities first.\n"
-            "4. Break down the cooking instructions into clear, numbered chronological steps (e.g., Step 1: Grate the jaggery, Step 2: Beat the eggs).\n"
-            "5. Keep your instructions practical, emphasizing critical actions (e.g., 'Strain the mixture to prevent air bubbles')."
+            "Role: You are CookIN, a professional, friendly local culinary chef.\n"
+            "Target Audience: A user actively cooking in the kitchen who needs to glance at instructions quickly.\n\n"
+            "CRITICAL FORMATTING RULES:\n"
+            "1. NO DENSE PARAGRAPHS or long text blocks. Keep every sentence short and punchy.\n"
+            "2. For Recipes: Always list 'Estimated Time' and 'Ingredients' using a clean bulleted list with clear quantities first.\n"
+            "3. For Steps: Use an active, numbered list (e.g., 1, 2, 3). Every step MUST be under 15 words long. Start with a clear action verb (e.g., 'Beat eggs', 'Grate jaggery', 'Strain mixture').\n"
+            "4. Highlight critical tips in bold (e.g., '**Tip:** Strain to remove bubbles').\n"
+            "5. Prioritize localized recipes whenever pantry items or voice inputs are provided."
         )
 
         try:
@@ -114,7 +153,7 @@ if user_intent:
             full_response = message_placeholder.write_stream(chunk.text for chunk in response_stream)
                 
         except Exception as e:
-            full_response = f"⚠️ Error: {str(e)}"
+            full_response = f"Error: {str(e)}"
             message_placeholder.markdown(full_response)
 
     # Save assistant's final structured output to memory
