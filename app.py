@@ -5,6 +5,24 @@ from streamlit_mic_recorder import mic_recorder
 
 st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 
+# --- INJECT CUSTOM SAN FRANCISCO FONT STYLING ---
+st.markdown(
+    """
+    <style>
+        /* Target the main app container, buttons, sidebar, and inputs */
+        html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+        }
+        
+        /* Ensure chat input bar inherits the clean font style */
+        .stChatInput textarea {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("CookIN — Your Personal Culinary Assistant")
 
 # 1. Initialize the Gemini Client
@@ -142,7 +160,7 @@ if user_intent:
         try:
             # Stream the text chunks out seamlessly
             response_stream = client.models.generate_content_stream(
-                model='gemini-2.5-flash',
+                model='gemini-2.5-pro',
                 contents=contents_payload,
                 config=types.GenerateContentConfig(
                     system_instruction=cookin_persona,
