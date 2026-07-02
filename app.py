@@ -82,7 +82,7 @@ with st.container():
         )
 
     with col_text:
-        chat_input = st.chat_input("Ask CookIN for a recipe, next steps, or cooking tips...")
+        chat_input = st.chat_input("Ask Aththamma for a recipe, next steps, or cooking tips...")
 
 # 5. Core Logic: Process Inputs (Either Sidebar Button OR Standard Chat Input)
 user_intent = None
@@ -98,11 +98,30 @@ if suggest_recipe_clicked:
 
 # Case B: User typed directly into the standard chat bar
 elif audio_input and "bytes" in audio_input and audio_input["bytes"]:
-    user_intent = "*Sent a voice pantry update*"
-    audio_payload = genai.types.Part.from_bytes(
-        data=audio_input["bytes"],
-        mime_type="audio/webm"
-    )
+    with st.spinner("Aththamma is listening closely..."):
+        try:
+            # 1. Create a temporary audio part from the raw bytes
+            temp_audio_payload = genai.types.Part.from_bytes(
+                data=audio_input["bytes"],
+                mime_type="audio/webm"
+            )
+
+            # 2. Ask Gemini to purely transcribe the audio into text first
+            transcription_response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[
+                    "You are a speech-to-text transcriber. Listen to this audio and write down exactly what the user said in plain text. Do not add any conversational replies, greetings, or formatting. Just output the exact transcription.",
+                    temp_audio_payload
+                ]
+            )
+
+            # 3. Save the transcribed text as the actual user intent
+            transcribed_text = transcription_response.text.strip()
+            user_intent = f"**Voice Message:** {transcribed_text}"
+
+        except Exception as e:
+            st.error(f"Could not transcribe voice: {str(e)}")
+            user_intent = "*Sent a voice message (Transcription failed)*"
 
 # Case C: User typed directly into the text chat bar at the bottom
 elif chat_input:
@@ -110,14 +129,14 @@ elif chat_input:
 
 # 6. Execute AI Generation If There Is An Active Intent
 if user_intent:
-    # Display the user prompt in the chat container
+    # This will now print the actual transcribed text on screen immediately!
     with st.chat_message("user"):
         st.markdown(user_intent)
     
     # Save user intent to memory
     st.session_state.messages.append({"role": "user", "content": user_intent})
 
-    # Prepare the conversation history payload for the SDK
+    # Prepare the chronological conversation history payload
     contents_payload = []
     for msg in st.session_state.messages:
         role_type = "user" if msg["role"] == "user" else "model"
@@ -127,19 +146,6 @@ if user_intent:
                 parts=[genai.types.Part.from_text(text=msg["content"])]
             )
         )
-
-    if audio_payload:
-        contents_payload.append(
-            genai.types.Content(
-                role="user",
-                parts=[genai.types.Part.from_text(
-                    text="Please analyze this audio data to figure out my kitchen ingredients or query, then provide a tailored localized recipe response."
-                    ),
-                    audio_payload
-                ]
-            )
-        )
-
     # Display assistant response block
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
@@ -174,7 +180,6 @@ if user_intent:
                     temperature=0.4
                 )
             )
-            
             full_response = message_placeholder.write_stream(chunk.text for chunk in response_stream)
                 
         except Exception as e:
