@@ -26,7 +26,6 @@ st.markdown(
 st.title("CookIN — Your Personal Culinary Assistant")
 
 # 1. Initialize the Gemini Client
-# Replace with your actual key from Google AI Studio
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. Sidebar Setup for Local Ingredients Search
@@ -45,9 +44,18 @@ custom_ingredients = st.sidebar.text_input("Any other ingredients? (comma-separa
 st.sidebar.markdown("___")
 suggest_recipe_clicked = st.sidebar.button("✨ Suggest Recipes Based on Pantry")
 
+# --- FIX: Combine all ingredients into a clean list format ---
+all_ingredients = list(selected_ingredients)
+if custom_ingredients:
+    all_ingredients.extend([i.strip() for i in custom_ingredients.split(",") if i.strip()])
+
 # 3. Initialize session state for chat history if it doesn't exist
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if st.sidebar.button("Reset kitchen (Clear Chat)"):
+    st.session_state.messages = []
+    st.rerun()
 
 # Global variables for capturing inputs
 user_intent = None
@@ -170,7 +178,10 @@ if user_intent:
                 config=types.GenerateContentConfig(system_instruction=cookin_persona, temperature=0.4)
             )
             full_response = message_placeholder.write_stream(chunk.text for chunk in response_stream)
-                
+
+            #Forcing a layout adjustment refresh    
+            st.rerun()
+        
         except Exception as e:
             full_response = f"⚠️ Error: {str(e)}"
             message_placeholder.markdown(full_response)
