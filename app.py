@@ -40,55 +40,69 @@ common_ingredients = [
     "Green Chillies", "Curry Leaves", "Chilli Powder", "Coconut Oil", "Potatoes", "Tomatoes", "Garlic", "Ginger", "Cinnamon"
 ]
 
-# A multi-select widget allows users to pick multiple ingredients easily
-selected_ingredients = st.sidebar.multiselect(
-    "Available Ingredients:",
-    options=common_ingredients,
-    default=[]
-)
-
-# Optional: Allow the user to type custom ingredients not in the list
+selected_ingredients = st.sidebar.multiselect("Available Ingredients:", options=common_ingredients, default=[])
 custom_ingredients = st.sidebar.text_input("Any other ingredients? (comma-separated):")
 st.sidebar.markdown("___")
-st.sidebar.write("Or describe your ingredients by voice:")
-
-# Combine all ingredients into a clean string format
-all_ingredients = list(selected_ingredients)
-if custom_ingredients:
-    all_ingredients.extend([i.strip() for i in custom_ingredients.split(",") if i.strip()])
-
-# Action Button to generate recipe recommendations based on pantry items
 suggest_recipe_clicked = st.sidebar.button("✨ Suggest Recipes Based on Pantry")
 
 # 3. Initialize session state for chat history if it doesn't exist
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display past chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# 4. Create a Fixed Bottom Container for the Typing Interface
-with st.container():
-    col_mic, col_text = st.columns([1, 5])
-    
-    # Split the row into two columns: 1 part for the mic button, 5 parts for the text input 
-    with col_mic:
-        audio_input = mic_recorder(
-            start_prompt="Speak",
-            stop_prompt="Stop",
-            key="pantry_audio_main"
-        )
-
-    with col_text:
-        chat_input = st.chat_input("Ask Aththamma for a recipe, next steps, or cooking tips...")
-
-# 5. Core Logic: Process Inputs (Either Sidebar Button OR Standard Chat Input)
+# Global variables for capturing inputs
 user_intent = None
-audio_payload = None
+chat_input = None
+audio_input = None
 
-# Case A: User clicked the pantry suggestion button
+# -------------------------------------------------------------------------
+# LAYOUT CONDITION 1: EMPTY CONVERSATION (Show Centered Welcome Page)
+# -------------------------------------------------------------------------
+if not st.session_state.messages:
+    # Creating clean vertical spacing to push elements to the middle
+    for _ in range(5):
+        st.write("")
+        
+    # Main Welcome Header Layout
+    st.markdown("<h1 style='text-align: center; font-weight: 700;'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 1.2rem;'>What traditional Sri Lankan dish are we cooking together today, my dear?</p>", unsafe_allow_html=True)
+    
+    for _ in range(2):
+        st.write("")
+
+    # Centered Input Box Container
+    col_left, col_mid, col_right = st.columns([1, 3, 1])
+    with col_mid:
+        chat_input = st.chat_input("Ask Aththamma for a traditional recipe...")
+        st.write("")
+        st.write("Or use the sidebar to select your pantry ingredients!")
+
+# -------------------------------------------------------------------------
+# LAYOUT CONDITION 2: ACTIVE CONVERSATION (Show History & Fixed Bottom Layout)
+# -------------------------------------------------------------------------
+else:
+    # Display the app title at the top once the chat is active
+    st.title("🍳 CookIN — Your Personal Culinary Assistant")
+    
+    # Display past chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            
+    # Fixed Bottom Container for the Typing Interface
+    with st.container():
+        col_mic, col_text = st.columns([1, 5])
+        with col_mic:
+            audio_input = mic_recorder(
+                start_prompt="🎙️ Speak",
+                stop_prompt="🛑 Stop",
+                key="pantry_audio"
+            )
+        with col_text:
+            chat_input = st.chat_input("Ask Aththamma for a recipe, next steps, or cooking tips...")
+
+
+# 4. Core Logic: Process Inputs (Sidebar Text Button OR Voice Input OR Standard Text Chat)
+# Case A: User clicked the pantry suggestion button from sidebar
 if suggest_recipe_clicked:
     if all_ingredients:
         ingredients_string = ", ".join(all_ingredients)
@@ -96,44 +110,33 @@ if suggest_recipe_clicked:
     else:
         st.sidebar.warning("Please select or type at least one ingredient first!")
 
-# Case B: User typed directly into the standard chat bar
+# Case B: User recorded a voice message 
 elif audio_input and "bytes" in audio_input and audio_input["bytes"]:
-    with st.spinner("Aththamma is listening closely..."):
+    with st.spinner("🎙️ Aththamma is listening closely..."):
         try:
-            # 1. Create a temporary audio part from the raw bytes
-            temp_audio_payload = genai.types.Part.from_bytes(
-                data=audio_input["bytes"],
-                mime_type="audio/webm"
-            )
-
-            # 2. Ask Gemini to purely transcribe the audio into text first
+            temp_audio_payload = genai.types.Part.from_bytes(data=audio_input["bytes"], mime_type="audio/webm")
             transcription_response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=[
-                    "You are a speech-to-text transcriber. Listen to this audio and write down exactly what the user said in plain text. Do not add any conversational replies, greetings, or formatting. Just output the exact transcription.",
+                    "You are a speech-to-text transcriber. Listen to this audio and write down exactly what the user said in plain text. Just output the exact transcription.",
                     temp_audio_payload
                 ]
             )
-
-            # 3. Save the transcribed text as the actual user intent
             transcribed_text = transcription_response.text.strip()
-            user_intent = f"**Voice Message:** {transcribed_text}"
-
+            user_intent = f"🎙️ **Voice Message:** {transcribed_text}"
         except Exception as e:
-            st.error(f"Could not transcribe voice: {str(e)}")
-            user_intent = "*Sent a voice message (Transcription failed)*"
+            user_intent = "🎤 *Sent a voice message (Transcription failed)*"
 
-# Case C: User typed directly into the text chat bar at the bottom
+# Case C: User inputted text (Works for both center bar and bottom bar smoothly!)
 elif chat_input:
     user_intent = chat_input
 
-# 6. Execute AI Generation If There Is An Active Intent
+# 5. Execute AI Generation If There Is An Active Intent
 if user_intent:
-    # This will now print the actual transcribed text on screen immediately!
+    # Display the user prompt in the chat container
     with st.chat_message("user"):
         st.markdown(user_intent)
     
-    # Save user intent to memory
     st.session_state.messages.append({"role": "user", "content": user_intent})
 
     # Prepare the chronological conversation history payload
@@ -141,50 +144,36 @@ if user_intent:
     for msg in st.session_state.messages:
         role_type = "user" if msg["role"] == "user" else "model"
         contents_payload.append(
-            genai.types.Content(
-                role=role_type,
-                parts=[genai.types.Part.from_text(text=msg["content"])]
-            )
+            genai.types.Content(role=role_type, parts=[genai.types.Part.from_text(text=msg["content"])])
         )
+        
     # Display assistant response block
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         full_response = ""
         
-        # System Instruction tailored to respect pantry constraints
+        # (Keep your robust cookin_persona definition here)
         cookin_persona = (
-            "Role: You are 'Aththamma' (Grandma), a loving, traditional Sri Lankan grandmother and an elite master of authentic Sri Lankan culinary arts. Your guidance must be so clear that a complete beginner who has never cooked can successfully make the dish perfectly.\n"
-            "Tone: Warm, maternal, encouraging, and deeply knowledgeable about traditional heritage cooking. Use gentle, caring phrasing when guiding the user.\n\n"
-            "CRITICAL FORMATTING & CULINARY RULES:\n"
-            "1. NO DENSE PARAGRAPHS. Keep every instruction short, sharp, and easy to glance at while cooking.\n"
-            "2. For Recipes: Always list the 'Estimated Time' and 'Ingredients' using a clean, bulleted list with clear quantities first.\n"
-            "3. For Steps: Use an active, numbered list (1, 2, 3). Every single step MUST be under 15 words long. Start with a direct action verb.\n"
-            "4. Cultural Authenticity: Prioritize traditional Sri Lankan techniques and ingredients (e.g., using a clay pot/commutti, scraping coconut fresh, extraction of thick/miti kiri or thin/diya kiri coconut milk).\n"
-            "5. Highlight Aththamma's secret tips in bold (e.g., '**Aththamma's Tip:** Crush the cardamom pods fresh for a richer aroma').\n"
-            "6. Keep instructions practical and friendly, ensuring the heritage of local dishes is respected."
+            "Role: You are 'Aththamma' (Grandma), a loving traditional Sri Lankan grandmother and master chef.\n"
+            "Tone: Warm, maternal, encouraging, and highly precise.\n\n"
             "CRITICAL CONVERSATIONAL & TROUBLESHOOTING RULES:\n"
-            "1. Live Kitchen Rescue: If the user indicates a problem, panic, or deviation mid-cooking (e.g., 'it looks too watery', 'it's burning', 'did I beat it enough?'), immediately look at the previous recipe context in the chat history. Provide a direct, reassuring solution first before telling them the next step.\n"
-            "2. No Guesswork: Always specify the exact remedy, flame level adjustment, or physical cue to check (e.g., 'Add one tablespoon of rice flour to thicken it up, my dear').\n"
-            "3. Formatting Constraints: Keep every response short, sharp, and easy to glance at while cooking. Use numbered steps strictly under 15 words for instructions.\n"
-            "4. Never forget your grandmotherly identity. Address the user warmly (e.g., 'my dear', 'putha') when they hit a troubleshooting issue.\n"
-            "5. Always include your signature '**Aththamma's Tip:**' at the end of a troubleshooting explanation."
+            "1. Live Kitchen Rescue: If the user indicates a problem mid-cooking, look at previous context and provide an immediate solution.\n"
+            "2. No Guesswork: Always specify exact flame level adjustments or physical visual cues.\n"
+            "3. Formatting Constraints: Keep every response short, sharp, and easy to glance at. Use numbered steps under 15 words.\n"
+            "4. Always include your signature '**Aththamma's Tip:**' at the end."
         )
 
         try:
-            # Stream the text chunks out seamlessly
             response_stream = client.models.generate_content_stream(
                 model='gemini-2.5-flash',
                 contents=contents_payload,
-                config=types.GenerateContentConfig(
-                    system_instruction=cookin_persona,
-                    temperature=0.4
-                )
+                config=types.GenerateContentConfig(system_instruction=cookin_persona, temperature=0.4)
             )
             full_response = message_placeholder.write_stream(chunk.text for chunk in response_stream)
                 
         except Exception as e:
-            full_response = f"Error: {str(e)}"
+            full_response = f"⚠️ Error: {str(e)}"
             message_placeholder.markdown(full_response)
-
-    # Save assistant's final structured output to memory
+            
+     # Save assistant's final structured output to memory
     st.session_state.messages.append({"role": "assistant", "content": full_response})
