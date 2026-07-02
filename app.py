@@ -53,9 +53,9 @@ if custom_ingredients:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-st.sidebar.button("Reset kitchen (Clear Chat)")
-st.session_state.messages = []
-st.rerun()
+if st.sidebar.button("Reset kitchen (Clear Chat)"):
+    st.session_state.messages = []
+    st.rerun()
 
 # Global variables for capturing inputs
 user_intent = None
