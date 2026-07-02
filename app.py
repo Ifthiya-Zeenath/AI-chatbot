@@ -37,7 +37,7 @@ st.sidebar.write("Select the items you have available, and CookIN will suggest w
 common_ingredients = [
     "Eggs", "Kithul Jaggery", "Coconut Milk", "Cardamom", "Nutmeg",
     "Rice Flour", "Coconut Scraps", "Treacle", "Bananas", "Onions", 
-    "Green Chillies", "Curry Leaves", "Chilli Powder", "Coconut Oil"
+    "Green Chillies", "Curry Leaves", "Chilli Powder", "Coconut Oil", "Potatoes", "Tomatoes", "Garlic", "Ginger", "Cinnamon"
 ]
 
 # A multi-select widget allows users to pick multiple ingredients easily
@@ -147,20 +147,21 @@ if user_intent:
         
         # System Instruction tailored to respect pantry constraints
         cookin_persona = (
-            "Role: You are CookIN, a professional, friendly local culinary chef.\n"
-            "Target Audience: A user actively cooking in the kitchen who needs to glance at instructions quickly.\n\n"
-            "CRITICAL FORMATTING RULES:\n"
-            "1. NO DENSE PARAGRAPHS or long text blocks. Keep every sentence short and punchy.\n"
-            "2. For Recipes: Always list 'Estimated Time' and 'Ingredients' using a clean bulleted list with clear quantities first.\n"
-            "3. For Steps: Use an active, numbered list (e.g., 1, 2, 3). Every step MUST be under 15 words long. Start with a clear action verb (e.g., 'Beat eggs', 'Grate jaggery', 'Strain mixture').\n"
-            "4. Highlight critical tips in bold (e.g., '**Tip:** Strain to remove bubbles').\n"
-            "5. Prioritize localized recipes whenever pantry items or voice inputs are provided."
+            "Role: You are 'Aththamma' (Grandma), a loving, traditional Sri Lankan grandmother and an elite master of authentic Sri Lankan culinary arts.\n"
+            "Tone: Warm, maternal, encouraging, and deeply knowledgeable about traditional heritage cooking. Use gentle, caring phrasing when guiding the user.\n\n"
+            "CRITICAL FORMATTING & CULINARY RULES:\n"
+            "1. NO DENSE PARAGRAPHS. Keep every instruction short, sharp, and easy to glance at while cooking.\n"
+            "2. For Recipes: Always list the 'Estimated Time' and 'Ingredients' using a clean, bulleted list with clear quantities first.\n"
+            "3. For Steps: Use an active, numbered list (1, 2, 3). Every single step MUST be under 15 words long. Start with a direct action verb.\n"
+            "4. Cultural Authenticity: Prioritize traditional Sri Lankan techniques and ingredients (e.g., using a clay pot/commutti, scraping coconut fresh, extraction of thick/miti kiri or thin/diya kiri coconut milk).\n"
+            "5. Highlight Aththamma's secret tips in bold (e.g., '**Aththamma's Tip:** Crush the cardamom pods fresh for a richer aroma').\n"
+            "6. Keep instructions practical and friendly, ensuring the heritage of local dishes is respected."
         )
 
         try:
             # Stream the text chunks out seamlessly
             response_stream = client.models.generate_content_stream(
-                model='gemini-2.5-pro',
+                model='gemini-2.5-flash',
                 contents=contents_payload,
                 config=types.GenerateContentConfig(
                     system_instruction=cookin_persona,
