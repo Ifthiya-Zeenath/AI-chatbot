@@ -179,10 +179,30 @@ if user_intent:
             )
             full_response = message_placeholder.write_stream(chunk.text for chunk in response_stream)
 
+            # 2. SUCCESS: Cache the latest response locally for offline access
+            with open("active_recipe.txt", "w", encoding="utf-8") as f:
+                f.write(full_response)
+
             #Forcing a layout adjustment refresh    
             st.rerun()
         
         except Exception as e:
+
+            import os
+            if os.path.exists("active_recipe.txt"):
+                with open("active_recipe.txt", "r", encoding="utf-8") as f:
+                    cached_response = f.read()
+                
+                full_response = (
+                    "**NNetwork Connection Lost.** *Aththamma is running in offline mode from your kitchen cache:*\n\n"
+                    + cached_response
+                )
+                message_placeholder.markdown(full_response)
+            else:
+                full_response = f"Connection Error: Please check your internet connection. (Error: {str(e)})"
+                message_placeholder.markdown(full_response)
+
+
             full_response = f"⚠️ Error: {str(e)}"
             message_placeholder.markdown(full_response)
             
