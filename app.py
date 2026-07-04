@@ -2,6 +2,7 @@ import streamlit as st
 from google import genai
 from google.genai import types
 from streamlit_mic_recorder import mic_recorder
+import os
 
 st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 
@@ -9,21 +10,46 @@ st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 st.markdown(
     """
     <style>
-        /* Target the main app container, buttons, sidebar, and inputs */
+        /* 1. Global Typography Settings */
         html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
         }
         
-        /* Ensure chat input bar inherits the clean font style */
         .stChatInput textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+        }
+
+        /* 2. Primary Button Styling (Deep Red Theme Overrides) */
+        div.stButton > button:first-child {
+            background-color: #660409 !important;
+            color: #ffffff !important;
+            border: 1px solid #660409 !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease;
+        }
+        
+        div.stButton > button:first-child:hover {
+            background-color: #4a0306 !important;
+            border-color: #4a0306 !important;
+            box-shadow: 0px 4px 10px rgba(102, 4, 9, 0.2) !important;
+        }
+
+        /* 3. Welcome Screen Heading Customization */
+        .welcome-title {
+            text-align: center; 
+            font-weight: 800; 
+            color: #660409;
+            margin-bottom: 5px;
+        }
+
+        /* 4. Chat Input Border Tint Accent */
+        .stChatInput focus-within {
+            border-color: #660409 !important;
         }
     </style>
     """,
     unsafe_allow_html=True
 )
-
-st.title("CookIN — Your Personal Culinary Assistant")
 
 # 1. Initialize the Gemini Client
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -44,7 +70,7 @@ custom_ingredients = st.sidebar.text_input("Any other ingredients? (comma-separa
 st.sidebar.markdown("___")
 suggest_recipe_clicked = st.sidebar.button("✨ Suggest Recipes Based on Pantry")
 
-# --- FIX: Combine all ingredients into a clean list format ---
+# Combine all ingredients into a clean list format ---
 all_ingredients = list(selected_ingredients)
 if custom_ingredients:
     all_ingredients.extend([i.strip() for i in custom_ingredients.split(",") if i.strip()])
@@ -53,8 +79,14 @@ if custom_ingredients:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Reset Kitchen / Clear Chat Session Button
+st .sidebar.markdown("___")
 if st.sidebar.button("Reset kitchen (Clear Chat)"):
     st.session_state.messages = []
+
+    # Clear local cache file on reset if it exists
+    if os.path.exists("active_recipe.txt"):
+        os.remove("active_recipe.txt")
     st.rerun()
 
 # Global variables for capturing inputs
@@ -71,7 +103,7 @@ if not st.session_state.messages:
         st.write("")
         
     # Main Welcome Header Layout
-    st.markdown("<h1 style='text-align: center; font-weight: 700;'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='welcome-title'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #888888; font-size: 1.2rem;'>What traditional Sri Lankan dish are we cooking together today, my dear?</p>", unsafe_allow_html=True)
     
     for _ in range(2):
@@ -164,11 +196,12 @@ if user_intent:
         cookin_persona = (
             "Role: You are 'Aththamma' (Grandma), a loving traditional Sri Lankan grandmother and master chef.\n"
             "Tone: Warm, maternal, encouraging, and highly precise.\n\n"
-            "CRITICAL CONVERSATIONAL & TROUBLESHOOTING RULES:\n"
-            "1. Live Kitchen Rescue: If the user indicates a problem mid-cooking, look at previous context and provide an immediate solution.\n"
-            "2. No Guesswork: Always specify exact flame level adjustments or physical visual cues.\n"
-            "3. Formatting Constraints: Keep every response short, sharp, and easy to glance at. Use numbered steps under 15 words.\n"
-            "4. Always include your signature '**Aththamma's Tip:**' at the end."
+            "CRITICAL RESPONSE DELIVERY RULES:\n"
+            "1. SINGLE-TURN COMPLETENESS: Provide the entire recipe (Ingredients, Prep, and Steps) all at once in your very first response. Never break it across multiple conversational turns or ask the user to prompt you for the next section.\n"
+            "2. Live Kitchen Rescue: If the user indicates a problem mid-cooking, immediately scan previous context and provide a direct solution.\n"
+            "3. Formatting & Scannability: Use bold text for key visual cues, temperatures, or flame levels. Keep steps short (under 15 words) so they are easy to glance at while cooking.\n"
+            "4. Structure: Always group the response into three compact Markdown sections within the same message: '📋 Ingredients', '🔥 Stove Setup & Prep', and '👩‍🍳 Cooking Steps'.\n"
+            "5. Always end with your signature sweet maternal advice labeled as '**Aththamma's Tip:**'."
         )
 
         try:
@@ -183,28 +216,24 @@ if user_intent:
             with open("active_recipe.txt", "w", encoding="utf-8") as f:
                 f.write(full_response)
 
-            #Forcing a layout adjustment refresh    
-            st.rerun()
         
         except Exception as e:
-
-            import os
+            # 3. OFFLINE FALLBACK: If API fails, look for the local file cache
             if os.path.exists("active_recipe.txt"):
                 with open("active_recipe.txt", "r", encoding="utf-8") as f:
                     cached_response = f.read()
                 
                 full_response = (
-                    "**NNetwork Connection Lost.** *Aththamma is running in offline mode from your kitchen cache:*\n\n"
+                    "**Network Connection Lost.** *Aththamma is running in offline mode from your kitchen cache:*\n\n"
                     + cached_response
                 )
                 message_placeholder.markdown(full_response)
             else:
                 full_response = f"Connection Error: Please check your internet connection. (Error: {str(e)})"
                 message_placeholder.markdown(full_response)
-
-
-            full_response = f"⚠️ Error: {str(e)}"
-            message_placeholder.markdown(full_response)
             
-     # Save assistant's final structured output to memory
+    # Save assistant's final structured output to memory
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+    #Forcing a layout adjustment refresh    
+    st.rerun()
