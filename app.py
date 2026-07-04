@@ -62,8 +62,8 @@ st.markdown(
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. Sidebar Setup with Logo
-if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", use_container_width=True)
+if os.path.exists("logo1.png"):
+    st.sidebar.image("logo1.png", use_container_width=True)
 
 # 2. Sidebar Setup for Local Ingredients Search
 st.sidebar.header("Kitchen Pantry")
@@ -114,10 +114,10 @@ if not st.session_state.messages:
         st.write("")
 
     # Render Logo Centered on landing page
-    if os.path.exists("logo.png"):
+    if os.path.exists("logo1.png"):
         col_img_l, col_img_m, col_img_r = st.columns([1, 1, 1])
         with col_img_m:
-            st.image("logo.png", use_container_width=True)
+            st.image("logo1.png", use_container_width=True)
         
     # Main Welcome Header Layout
     st.markdown("<h1 class='welcome-title'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
@@ -139,8 +139,8 @@ else:
     # Head row with small inline branding once active
     col_title_l, col_title_r = st.columns([1,12])
     with col_title_l:
-        if os.path.exists("logo.png"):
-            st.image("logo.png", width=60)
+        if os.path.exists("logo1.png"):
+            st.image("logo1.png", width=60)
     with col_title_r:
          st.title("CookIN — Your Personal Culinary Assistant")
     
