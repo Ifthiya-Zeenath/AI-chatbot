@@ -19,32 +19,39 @@ st.markdown(
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
         }
 
-        /* 2. Primary Button Styling (Deep Red Theme Overrides) */
+        /* 2. Primary Button Styling (Orange & Green Logo Theme) */
         div.stButton > button:first-child {
-            background-color: #660409 !important;
+            background-color: #FF8400 !important;
             color: #ffffff !important;
-            border: 1px solid #660409 !important;
-            border-radius: 8px !important;
+            border: 2px solid #5C3A21 !important; /* Soft brown border from logo */
+            border-radius: 12px !important;
+            font-weight: 600 !important;
             transition: all 0.3s ease;
         }
         
         div.stButton > button:first-child:hover {
-            background-color: #4a0306 !important;
-            border-color: #4a0306 !important;
-            box-shadow: 0px 4px 10px rgba(102, 4, 9, 0.2) !important;
+            background-color: #E07300 !important;
+            box-shadow: 0px 4px 10px rgba(255, 132, 0, 0.3) !important;
         }
 
         /* 3. Welcome Screen Heading Customization */
         .welcome-title {
             text-align: center; 
             font-weight: 800; 
-            color: #660409;
+            color: #FF8400; /* Matching 'Cook' Orange */
             margin-bottom: 5px;
         }
+        
+        .welcome-subtitle {
+            text-align: center; 
+            color: #84D32C; /* Matching 'IN' Green */
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
 
-        /* 4. Chat Input Border Tint Accent */
+        /* 4. Chat Input Focus Border Accent */
         .stChatInput focus-within {
-            border-color: #660409 !important;
+            border-color: #84D32C !important;
         }
     </style>
     """,
@@ -53,6 +60,10 @@ st.markdown(
 
 # 1. Initialize the Gemini Client
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+# 2. Sidebar Setup with Logo
+if os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", use_container_width=True)
 
 # 2. Sidebar Setup for Local Ingredients Search
 st.sidebar.header("Kitchen Pantry")
@@ -99,29 +110,39 @@ audio_input = None
 # -------------------------------------------------------------------------
 if not st.session_state.messages:
     # Creating clean vertical spacing to push elements to the middle
-    for _ in range(5):
+    for _ in range(2):
         st.write("")
+
+    # Render Logo Centered on landing page
+    if os.path.exists("logo.png"):
+        col_img_l, col_img_m, col_img_r = st.columns([1, 1, 1])
+        with col_img_m:
+            st.image("logo.png", use_container_width=True)
         
     # Main Welcome Header Layout
     st.markdown("<h1 class='welcome-title'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 1.2rem;'>What traditional Sri Lankan dish are we cooking together today, my dear?</p>", unsafe_allow_html=True)
-    
-    for _ in range(2):
-        st.write("")
+    st.markdown("<p class='welcome-subtitle'>What traditional Sri Lankan dish are we cooking together today, my dear?</p>", unsafe_allow_html=True)
+   
+    st.write("")
 
     # Centered Input Box Container
     col_left, col_mid, col_right = st.columns([1, 3, 1])
     with col_mid:
         chat_input = st.chat_input("Ask Aththamma for a traditional recipe...")
         st.write("")
-        st.write("Or use the sidebar to select your pantry ingredients!")
+        st.markdown("<p style='text-align: center; color: #888888;'>Or use the sidebar to select your pantry ingredients!</p>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------------------
 # LAYOUT CONDITION 2: ACTIVE CONVERSATION (Show History & Fixed Bottom Layout)
 # -------------------------------------------------------------------------
 else:
-    # Display the app title at the top once the chat is active
-    st.title("🍳 CookIN — Your Personal Culinary Assistant")
+    # Head row with small inline branding once active
+    col_title_l, col_title_r = st.columns([1,12])
+    with col_title_l:
+        if os.path.exists("logo.png"):
+            st.image("logo.png", width=60)
+    with col_title_r:
+         st.title("CookIN — Your Personal Culinary Assistant")
     
     # Display past chat messages from history on app rerun
     for message in st.session_state.messages:
@@ -216,13 +237,11 @@ if user_intent:
             with open("active_recipe.txt", "w", encoding="utf-8") as f:
                 f.write(full_response)
 
-        
         except Exception as e:
             # 3. OFFLINE FALLBACK: If API fails, look for the local file cache
             if os.path.exists("active_recipe.txt"):
                 with open("active_recipe.txt", "r", encoding="utf-8") as f:
                     cached_response = f.read()
-                
                 full_response = (
                     "**Network Connection Lost.** *Aththamma is running in offline mode from your kitchen cache:*\n\n"
                     + cached_response
