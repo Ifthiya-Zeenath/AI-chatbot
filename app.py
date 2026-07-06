@@ -63,6 +63,39 @@ st.markdown(
         [data-testid="stChatMessageContent"] ol {
             color: #3d1706 !important;
         }
+
+        /* --- DARK MODE OVERRIDES --- */
+        @media (prefers-color-scheme: dark) {
+            html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
+                background-color: #3d1706 !important;
+            }
+            [data-testid="stBottom"] {
+                background-color: #3d1706 !important;
+            }
+            [data-testid="stBottomBlockContainer"] {
+                background-color: #3d1706 !important;
+            }
+            [data-testid="stSidebar"] {
+                background-color: #2c0f03 !important;
+                border-right: 1px solid #e9d2b433 !important;
+            }
+            [data-testid="stSidebar"] h1, 
+            [data-testid="stSidebar"] h2, 
+            [data-testid="stSidebar"] h3, 
+            [data-testid="stSidebar"] p, 
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span {
+                color: #e9d2b4 !important;
+            }
+            [data-testid="stChatMessageContent"] {
+                color: #e9d2b4 !important;
+            }
+            [data-testid="stChatMessageContent"] p, 
+            [data-testid="stChatMessageContent"] li, 
+            [data-testid="stChatMessageContent"] ol {
+                color: #e9d2b4 !important;
+            }
+        }
     </style>
     """,
     unsafe_allow_html=True
@@ -304,6 +337,25 @@ if not st.session_state.messages:
                 section[data-testid="stSidebar"][data-collapsed="false"] ~ section.stMain .footer-hint {
                     left: calc(50% + 168px) !important;
                     width: calc(100% - 370px) !important;
+                }
+            }
+
+            /* --- DARK MODE OVERRIDES FOR WELCOME PAGE --- */
+            @media (prefers-color-scheme: dark) {
+                html, body, [data-testid="stAppViewContainer"], .stApp {
+                    background-color: #3d1706 !important;
+                }
+                [data-testid="stBottom"] {
+                    background-color: #3d1706 !important;
+                }
+                .main-title {
+                    color: #e9d2b4 !important;
+                }
+                .sub-title {
+                    color: #e9d2b4 !important;
+                }
+                .footer-hint {
+                    color: #e9d2b4 !important;
                 }
             }
         </style>
