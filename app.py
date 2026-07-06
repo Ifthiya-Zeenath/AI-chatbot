@@ -3,6 +3,7 @@ from google import genai
 from google.genai import types
 from streamlit_mic_recorder import mic_recorder
 import os
+import base64
 
 st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 
@@ -10,48 +11,57 @@ st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
 st.markdown(
     """
     <style>
-        /* 1. Global Typography Settings */
+        /* Maintain the background color across BOTH welcome screen and active chat screen */
         html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            background-color: #e9d2b4 !important;
         }
         
+        /* Ensure the bottom bar area matches the background color across all views */
+        [data-testid="stBottom"] {
+            background-color: #e9d2b4 !important;
+            box-shadow: none !important;
+            border-top: none !important;
+        }
+        [data-testid="stBottomBlockContainer"] {
+            background-color: #e9d2b4 !important;
+            padding: 0 !important;
+        }
+
+        /* Customize sidebar background for a warm, clean feel */
+        [data-testid="stSidebar"] {
+            background-color: #f7e6d0 !important;
+            border-right: 1px solid #f87d0f33 !important;
+        }
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3, 
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] span {
+            color: #3d1706 !important;
+        }
+        
+        /* Ensure chat text area inherits clean styling */
         .stChatInput textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
         }
 
-        /* 2. Primary Button Styling (Orange & Green Logo Theme) */
-        div.stButton > button:first-child {
-            background-color: #FF8400 !important;
-            color: #ffffff !important;
-            border: 2px solid #5C3A21 !important; /* Soft brown border from logo */
-            border-radius: 12px !important;
-            font-weight: 600 !important;
-            transition: all 0.3s ease;
+        /* FORCE ALL COOKEIN / ATHTHAMMA AI RESPONSES TO BE IN #3d1706 */
+        [data-testid="stChatMessage"] {
+            background-color: transparent !important; /* Keeps background clean */
         }
         
-        div.stButton > button:first-child:hover {
-            background-color: #E07300 !important;
-            box-shadow: 0px 4px 10px rgba(255, 132, 0, 0.3) !important;
-        }
-
-        /* 3. Welcome Screen Heading Customization */
-        .welcome-title {
-            text-align: center; 
-            font-weight: 800; 
-            color: #FF8400; /* Matching 'Cook' Orange */
-            margin-bottom: 5px;
+        /* Target assistant text messages specifically */
+        [data-testid="stChatMessageContent"] {
+            color: #3d1706 !important;
         }
         
-        .welcome-subtitle {
-            text-align: center; 
-            color: #84D32C; /* Matching 'IN' Green */
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-
-        /* 4. Chat Input Focus Border Accent */
-        .stChatInput focus-within {
-            border-color: #84D32C !important;
+        /* Ensure standard markdown elements inside responses match your color */
+        [data-testid="stChatMessageContent"] p, 
+        [data-testid="stChatMessageContent"] li, 
+        [data-testid="stChatMessageContent"] ol {
+            color: #3d1706 !important;
         }
     </style>
     """,
@@ -108,30 +118,187 @@ audio_input = None
 # -------------------------------------------------------------------------
 # LAYOUT CONDITION 1: EMPTY CONVERSATION (Show Centered Welcome Page)
 # -------------------------------------------------------------------------
+
 if not st.session_state.messages:
-    # Creating clean vertical spacing to push elements to the middle
-    for _ in range(2):
-        st.write("")
-
-    # Render Logo Centered on landing page
+    # Convert logo to base64 for HTML embedding
+    logo_base64 = ""
     if os.path.exists("logo1.png"):
-        col_img_l, col_img_m, col_img_r = st.columns([1, 1, 1])
-        with col_img_m:
-            st.image("logo1.png", use_container_width=True)
-        
-    # Main Welcome Header Layout
-    st.markdown("<h1 class='welcome-title'>Hello, I'm Aththamma</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='welcome-subtitle'>What traditional Sri Lankan dish are we cooking together today, my dear?</p>", unsafe_allow_html=True)
+        with open("logo1.png", "rb") as image_file:
+            logo_base64 = base64.b64encode(image_file.read()).decode("utf-8")
+
+    # Inject background and custom container styling to fit the screen without a scroll bar
+    st.markdown(
+        """
+        <style>
+            /* Force the main background color and hide scrollbar */
+            html, body, [data-testid="stAppViewContainer"] {
+                background-color: #e9d2b4 !important;
+                overflow: hidden !important;
+                height: 100vh !important;
+            }
+            [data-testid="stHeader"] {
+                background: transparent !important;
+            }
+            
+            /* Center the welcome container relative to the main content area (offsetting sidebar) */
+            .welcome-container {
+                position: fixed !important;
+                top: 8vh !important;
+                left: calc(50% + 168px) !important;
+                transform: translateX(-50%) !important;
+                width: calc(100% - 336px) !important;
+                max-width: 700px !important;
+                text-align: center !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                z-index: 10 !important;
+            }
+            
+            .welcome-logo {
+                height: 18vh !important;
+                width: auto !important;
+                margin-bottom: 2vh !important;
+            }
+            
+            /* Title Typography with !important to prevent Streamlit overrides */
+            .main-title {
+                color: #3d1706 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+                font-size: 2.6rem !important;
+                font-weight: 700 !important;
+                margin: 0 0 1vh 0 !important;
+                line-height: 1.2 !important;
+            }
+            .sub-title {
+                color: #953108 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+                font-size: 1.15rem !important;
+                font-weight: 600 !important;
+                margin: 0 !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Position and Style the Bottom Chat Input block in its slot */
+            [data-testid="stBottom"] {
+                position: fixed !important;
+                top: 52vh !important; /* Place it in the middle */
+                bottom: auto !important;
+                left: calc(50% + 168px) !important;
+                transform: translateX(-50%) !important;
+                width: calc(100% - 336px) !important;
+                max-width: 550px !important;
+                background-color: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+                z-index: 99 !important;
+                padding: 0 !important;
+            }
+            
+            /* Make the inner wrapper transparent to remove the white background band */
+            [data-testid="stBottom"] > div {
+                background-color: transparent !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+            
+            [data-testid="stBottomBlockContainer"] {
+                background-color: transparent !important;
+                padding: 0 !important;
+            }
+            
+            /* TARGET STREAMLIT CHAT INPUT CONTAINER FOR PILL SHAPE */
+            [data-testid="stChatInput"] {
+                border: 2px solid #f87d0f !important;
+                border-radius: 50px !important; /* Forces perfect pill shape */
+                background-color: #ffffff !important;
+                padding: 6px 16px !important;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+                width: 100% !important;
+            }
+            
+            [data-testid="stChatInput"]:focus-within {
+                border-color: #f87d0f !important;
+                box-shadow: 0 0 0 0.2rem rgba(248, 125, 15, 0.25) !important;
+            }
+            
+            /* Make sure text input area background stays white inside the pill */
+            [data-testid="stChatInput"] textarea {
+                background-color: transparent !important;
+                color: #3d1706 !important;
+                font-size: 1.05rem !important;
+                caret-color: #3d1706 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            }
+            
+            /* Customize the built-in send arrow button to match #7fbf1f */
+            button[data-testid="stChatInputSubmitButton"] {
+                background-color: #7fbf1f !important;
+                color: white !important;
+                border-radius: 50% !important;
+                width: 38px !important;
+                height: 38px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border: none !important;
+                transition: transform 0.2s, background-color 0.2s !important;
+            }
+            
+            button[data-testid="stChatInputSubmitButton"]:hover {
+                background-color: #6da31a !important;
+                transform: scale(1.05);
+            }
+            
+            .footer-hint {
+                position: fixed !important;
+                top: 67vh !important; /* Positioned directly below input with clearance */
+                left: calc(50% + 168px) !important;
+                transform: translateX(-50%) !important;
+                width: calc(100% - 336px) !important;
+                color: #953108 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+                font-size: 1rem !important;
+                font-weight: 500 !important;
+                margin: 0 !important;
+                text-align: center;
+                opacity: 0.9;
+                z-index: 10 !important;
+            }
+            
+            /* Hide vertical scrollbar for main Streamlit page container */
+            [data-testid="stAppViewBlockContainer"] {
+                overflow: hidden !important;
+                padding: 0 !important;
+                height: 100vh !important;
+            }
+            .main {
+                overflow: hidden !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # 1. Render Logo and Headers in a single styled block
+    logo_html = f'<img class="welcome-logo" src="data:image/png;base64,{logo_base64}" />' if logo_base64 else ""
+    st.markdown(
+        f"""
+        <div class="welcome-container">
+            {logo_html}
+            <h1 class="main-title">Hello, I'm Aththamma</h1>
+            <p class="sub-title">What traditional Sri Lankan dish are we cooking together today, my dear?</p>
+        </div>
+        <p class="footer-hint">Or use the sidebar to select your pantry ingredients!</p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 2. Streamlit Pill Input Component
+    chat_input = st.chat_input("Ask Aththamma for a traditional recipe....")
    
-    st.write("")
-
-    # Centered Input Box Container
-    col_left, col_mid, col_right = st.columns([1, 3, 1])
-    with col_mid:
-        chat_input = st.chat_input("Ask Aththamma for a traditional recipe...")
-        st.write("")
-        st.markdown("<p style='text-align: center; color: #888888;'>Or use the sidebar to select your pantry ingredients!</p>", unsafe_allow_html=True)
-
 # -------------------------------------------------------------------------
 # LAYOUT CONDITION 2: ACTIVE CONVERSATION (Show History & Fixed Bottom Layout)
 # -------------------------------------------------------------------------
