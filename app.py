@@ -73,7 +73,10 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. Sidebar Setup with Logo
 if os.path.exists("logo1.png"):
-    st.sidebar.image("logo1.png", use_container_width=True)
+    # Center the logo in the sidebar with a smaller width (swapped from welcome page)
+    col_sb1, col_sb2, col_sb3 = st.sidebar.columns([1, 8, 1])
+    with col_sb2:
+        st.image("logo1.png", width=180)
 
 # 2. Sidebar Setup for Local Ingredients Search
 st.sidebar.header("Kitchen Pantry")
@@ -156,8 +159,8 @@ if not st.session_state.messages:
             }
             
             .welcome-logo {
-                height: 18vh !important;
-                width: auto !important;
+                width: 220px !important;
+                height: auto !important;
                 margin-bottom: 2vh !important;
             }
             
