@@ -143,19 +143,20 @@ if not st.session_state.messages:
                 background: transparent !important;
             }
             
-            /* Center the welcome container relative to the main content area (offsetting sidebar) */
+            /* Center the welcome container relative to the viewport by default (sidebar closed) */
             .welcome-container {
                 position: fixed !important;
-                top: 8vh !important;
-                left: calc(50% + 168px) !important;
+                top: 2vh !important;
+                left: 50% !important;
                 transform: translateX(-50%) !important;
-                width: calc(100% - 336px) !important;
-                max-width: 700px !important;
+                width: 85% !important;
+                max-width: 580px !important;
                 text-align: center !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 z-index: 10 !important;
+                transition: left 0.3s ease, width 0.3s ease !important;
             }
             
             .welcome-logo {
@@ -182,20 +183,21 @@ if not st.session_state.messages:
                 line-height: 1.4 !important;
             }
             
-            /* Position and Style the Bottom Chat Input block in its slot */
+            /* Position and Style the Bottom Chat Input block in its slot by default */
             [data-testid="stBottom"] {
                 position: fixed !important;
-                top: 52vh !important; /* Place it in the middle */
-                bottom: auto !important;
-                left: calc(50% + 168px) !important;
+                bottom: 18vh !important; /* Positioned relative to bottom */
+                top: auto !important;
+                left: 50% !important;
                 transform: translateX(-50%) !important;
-                width: calc(100% - 336px) !important;
-                max-width: 550px !important;
+                width: 85% !important;
+                max-width: 540px !important;
                 background-color: transparent !important;
                 box-shadow: none !important;
                 border: none !important;
                 z-index: 99 !important;
                 padding: 0 !important;
+                transition: left 0.3s ease, width 0.3s ease !important;
             }
             
             /* Make the inner wrapper transparent to remove the white background band */
@@ -220,6 +222,12 @@ if not st.session_state.messages:
                 padding: 6px 16px !important;
                 box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
                 width: 100% !important;
+            }
+            
+            /* Make entire inside of the pill full white (removes Streamlit's two-color gray/blue textarea bg) */
+            [data-testid="stChatInput"] div {
+                background-color: transparent !important;
+                background: transparent !important;
             }
             
             [data-testid="stChatInput"]:focus-within {
@@ -257,10 +265,11 @@ if not st.session_state.messages:
             
             .footer-hint {
                 position: fixed !important;
-                top: 67vh !important; /* Positioned directly below input with clearance */
-                left: calc(50% + 168px) !important;
+                bottom: 11vh !important; /* Positioned directly below input with clearance */
+                top: auto !important;
+                left: 50% !important;
                 transform: translateX(-50%) !important;
-                width: calc(100% - 336px) !important;
+                width: 85% !important;
                 color: #953108 !important;
                 font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
                 font-size: 1rem !important;
@@ -269,6 +278,7 @@ if not st.session_state.messages:
                 text-align: center;
                 opacity: 0.9;
                 z-index: 10 !important;
+                transition: left 0.3s ease, width 0.3s ease !important;
             }
             
             /* Hide vertical scrollbar for main Streamlit page container */
@@ -279,6 +289,22 @@ if not st.session_state.messages:
             }
             .main {
                 overflow: hidden !important;
+            }
+
+            /* --- DYNAMIC ADJUSTMENTS WHEN THE SIDEBAR IS EXPANDED --- */
+            @media (min-width: 768px) {
+                section[data-testid="stSidebar"][data-collapsed="false"] ~ section.stMain .welcome-container {
+                    left: calc(50% + 168px) !important;
+                    width: calc(100% - 370px) !important;
+                }
+                section[data-testid="stSidebar"][data-collapsed="false"] ~ section.stMain [data-testid="stBottom"] {
+                    left: calc(50% + 168px) !important;
+                    width: calc(100% - 370px) !important;
+                }
+                section[data-testid="stSidebar"][data-collapsed="false"] ~ section.stMain .footer-hint {
+                    left: calc(50% + 168px) !important;
+                    width: calc(100% - 370px) !important;
+                }
             }
         </style>
         """,
