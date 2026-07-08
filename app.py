@@ -4,8 +4,65 @@ from google.genai import types
 from streamlit_mic_recorder import mic_recorder
 import os
 import base64
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="CookIN", page_icon="🍳", layout="wide")
+
+# Hidden JavaScript theme listener to apply .theme-dark to the parent body when Streamlit's dark theme is selected
+components.html(
+    """
+    <script>
+        const updateThemeClass = () => {
+            try {
+                const parentDoc = window.parent ? window.parent.document : null;
+                if (!parentDoc || !parentDoc.body) {
+                    return;
+                }
+                // Initialize first-time landing theme to Light Mode in localStorage
+                try {
+                    const activeTheme = window.parent.localStorage.getItem('stActiveTheme-/-v2');
+                    if (activeTheme === null) {
+                        window.parent.localStorage.setItem('stActiveTheme-/-v2', '"Light"');
+                        window.parent.location.reload();
+                        return;
+                    }
+                } catch (storageErr) {
+                    console.error("Local storage error:", storageErr);
+                }
+                
+                const btn = parentDoc.querySelector('[data-testid="stHeader"] button') || 
+                            parentDoc.querySelector('button') || 
+                            parentDoc.querySelector('[data-testid="stHeader"]');
+                
+                let isDarkTheme = false;
+                if (btn) {
+                    const btnColor = window.parent.getComputedStyle(btn).color;
+                    isDarkTheme = btnColor.includes('250') || 
+                                  btnColor.includes('255') || 
+                                  btnColor.includes('fafafa') || 
+                                  btnColor.includes('ffffff');
+                } else {
+                    isDarkTheme = window.parent.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
+                
+                if (isDarkTheme) {
+                    parentDoc.body.classList.add('theme-dark');
+                    parentDoc.body.classList.remove('theme-light');
+                } else {
+                    parentDoc.body.classList.add('theme-light');
+                    parentDoc.body.classList.remove('theme-dark');
+                }
+            } catch (e) {
+                console.error("Theme detector error:", e);
+            }
+        };
+        updateThemeClass();
+        setInterval(updateThemeClass, 1000);
+    </script>
+    """,
+    height=0,
+    width=0
+)
 
 # --- INJECT CUSTOM SAN FRANCISCO FONT STYLING ---
 st.markdown(
@@ -15,6 +72,11 @@ st.markdown(
         html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
             background-color: #e9d2b4 !important;
+        }
+
+        /* Set default light mode colors for headers and standard text */
+        h1, h2, h3, h4, h5, h6, p, span, label, li, ol, ul, [data-testid="stMarkdownContainer"] p {
+            color: #3d1706 !important;
         }
         
         /* Ensure the bottom bar area matches the background color across all views */
@@ -62,6 +124,69 @@ st.markdown(
         [data-testid="stChatMessageContent"] li, 
         [data-testid="stChatMessageContent"] ol {
             color: #3d1706 !important;
+        }
+
+
+        /* --- DARK MODE OVERRIDES (Streamlit Settings Integration) --- */
+        body.theme-dark, 
+        body.theme-dark [data-testid="stAppViewContainer"], 
+        body.theme-dark .stApp, 
+        body.theme-dark button, 
+        body.theme-dark input, 
+        body.theme-dark select, 
+        body.theme-dark textarea {
+            background-color: #3d1706 !important;
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark h1, 
+        body.theme-dark h2, 
+        body.theme-dark h3, 
+        body.theme-dark h4, 
+        body.theme-dark h5, 
+        body.theme-dark h6, 
+        body.theme-dark p, 
+        body.theme-dark span, 
+        body.theme-dark label, 
+        body.theme-dark li, 
+        body.theme-dark ol, 
+        body.theme-dark ul, 
+        body.theme-dark [data-testid="stMarkdownContainer"] p {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stBottom"], 
+        body.theme-dark [data-testid="stBottomBlockContainer"] {
+            background-color: #3d1706 !important;
+        }
+        body.theme-dark [data-testid="stSidebar"] {
+            background-color: #2c0f03 !important;
+            border-right: 1px solid #e9d2b433 !important;
+        }
+        body.theme-dark [data-testid="stSidebar"] h1, 
+        body.theme-dark [data-testid="stSidebar"] h2, 
+        body.theme-dark [data-testid="stSidebar"] h3, 
+        body.theme-dark [data-testid="stSidebar"] p, 
+        body.theme-dark [data-testid="stSidebar"] label,
+        body.theme-dark [data-testid="stSidebar"] span {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatMessageContent"] {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatMessageContent"] p, 
+        body.theme-dark [data-testid="stChatMessageContent"] li, 
+        body.theme-dark [data-testid="stChatMessageContent"] ol {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatInput"] {
+            border: 2px solid #e9d2b4 !important;
+            background-color: #4d220f !important;
+        }
+        body.theme-dark [data-testid="stChatInput"] textarea {
+            color: #e9d2b4 !important;
+            caret-color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatInput"] textarea::placeholder {
+            color: rgba(233, 210, 180, 0.7) !important;
         }
     </style>
     """,
@@ -305,6 +430,37 @@ if not st.session_state.messages:
                     left: calc(50% + 168px) !important;
                     width: calc(100% - 370px) !important;
                 }
+            }
+
+
+            /* --- DARK MODE OVERRIDES FOR WELCOME PAGE (Streamlit Settings Integration) --- */
+            body.theme-dark, 
+            body.theme-dark [data-testid="stAppViewContainer"], 
+            body.theme-dark .stApp {
+                background-color: #3d1706 !important;
+            }
+            body.theme-dark [data-testid="stBottom"] {
+                background-color: #3d1706 !important;
+            }
+            body.theme-dark .main-title {
+                color: #e9d2b4 !important;
+            }
+            body.theme-dark .sub-title {
+                color: #e9d2b4 !important;
+            }
+            body.theme-dark .footer-hint {
+                color: #e9d2b4 !important;
+            }
+            body.theme-dark [data-testid="stChatInput"] {
+                border: 2px solid #e9d2b4 !important;
+                background-color: #4d220f !important;
+            }
+            body.theme-dark [data-testid="stChatInput"] textarea {
+                color: #e9d2b4 !important;
+                caret-color: #e9d2b4 !important;
+            }
+            body.theme-dark [data-testid="stChatInput"] textarea::placeholder {
+                color: rgba(233, 210, 180, 0.7) !important;
             }
         </style>
         """,
