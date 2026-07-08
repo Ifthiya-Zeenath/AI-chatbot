@@ -18,7 +18,8 @@ components.html(
                 if (!parentDoc || !parentDoc.body) {
                     return;
                 }
-                // Initialize first-time landing theme to Light Mode in localStorage
+                let isDarkTheme = false;
+                let themeVal = "unknown";
                 try {
                     const activeTheme = window.parent.localStorage.getItem('stActiveTheme-/-v2');
                     if (activeTheme === null) {
@@ -26,22 +27,18 @@ components.html(
                         window.parent.location.reload();
                         return;
                     }
+                    
+                    themeVal = activeTheme.replace(/"/g, '').trim();
+                    if (themeVal === 'Dark') {
+                        isDarkTheme = true;
+                    } else if (themeVal === 'Light') {
+                        isDarkTheme = false;
+                    } else {
+                        isDarkTheme = window.parent.matchMedia('(prefers-color-scheme: dark)').matches;
+                    }
                 } catch (storageErr) {
                     console.error("Local storage error:", storageErr);
-                }
-                
-                const btn = parentDoc.querySelector('[data-testid="stHeader"] button') || 
-                            parentDoc.querySelector('button') || 
-                            parentDoc.querySelector('[data-testid="stHeader"]');
-                
-                let isDarkTheme = false;
-                if (btn) {
-                    const btnColor = window.parent.getComputedStyle(btn).color;
-                    isDarkTheme = btnColor.includes('250') || 
-                                  btnColor.includes('255') || 
-                                  btnColor.includes('fafafa') || 
-                                  btnColor.includes('ffffff');
-                } else {
+                    themeVal = "error";
                     isDarkTheme = window.parent.matchMedia('(prefers-color-scheme: dark)').matches;
                 }
                 
@@ -69,124 +66,79 @@ st.markdown(
     """
     <style>
         /* Maintain the background color across BOTH welcome screen and active chat screen */
-        html, body, [data-testid="stAppViewContainer"], .stApp, button, input, select, textarea {
+        body:not(.theme-dark), 
+        body:not(.theme-dark) [data-testid="stAppViewContainer"], 
+        body:not(.theme-dark) .stApp, 
+        body:not(.theme-dark) button, 
+        body:not(.theme-dark) input, 
+        body:not(.theme-dark) select, 
+        body:not(.theme-dark) textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
             background-color: #e9d2b4 !important;
         }
 
         /* Set default light mode colors for headers and standard text */
-        h1, h2, h3, h4, h5, h6, p, span, label, li, ol, ul, [data-testid="stMarkdownContainer"] p {
+        body:not(.theme-dark) h1, 
+        body:not(.theme-dark) h2, 
+        body:not(.theme-dark) h3, 
+        body:not(.theme-dark) h4, 
+        body:not(.theme-dark) h5, 
+        body:not(.theme-dark) h6, 
+        body:not(.theme-dark) p, 
+        body:not(.theme-dark) span, 
+        body:not(.theme-dark) label, 
+        body:not(.theme-dark) li, 
+        body:not(.theme-dark) ol, 
+        body:not(.theme-dark) ul, 
+        body:not(.theme-dark) [data-testid="stMarkdownContainer"] p {
             color: #3d1706 !important;
         }
         
         /* Ensure the bottom bar area matches the background color across all views */
-        [data-testid="stBottom"] {
+        body:not(.theme-dark) [data-testid="stBottom"] {
             background-color: #e9d2b4 !important;
             box-shadow: none !important;
             border-top: none !important;
         }
-        [data-testid="stBottomBlockContainer"] {
+        body:not(.theme-dark) [data-testid="stBottomBlockContainer"] {
             background-color: #e9d2b4 !important;
             padding: 0 !important;
         }
 
         /* Customize sidebar background for a warm, clean feel */
-        [data-testid="stSidebar"] {
+        body:not(.theme-dark) [data-testid="stSidebar"] {
             background-color: #f7e6d0 !important;
             border-right: 1px solid #f87d0f33 !important;
         }
-        [data-testid="stSidebar"] h1, 
-        [data-testid="stSidebar"] h2, 
-        [data-testid="stSidebar"] h3, 
-        [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] label,
-        [data-testid="stSidebar"] span {
+        body:not(.theme-dark) [data-testid="stSidebar"] h1, 
+        body:not(.theme-dark) [data-testid="stSidebar"] h2, 
+        body:not(.theme-dark) [data-testid="stSidebar"] h3, 
+        body:not(.theme-dark) [data-testid="stSidebar"] p, 
+        body:not(.theme-dark) [data-testid="stSidebar"] label,
+        body:not(.theme-dark) [data-testid="stSidebar"] span {
             color: #3d1706 !important;
         }
         
         /* Ensure chat text area inherits clean styling */
-        .stChatInput textarea {
+        body:not(.theme-dark) .stChatInput textarea {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
         }
 
         /* FORCE ALL COOKEIN / ATHTHAMMA AI RESPONSES TO BE IN #3d1706 */
-        [data-testid="stChatMessage"] {
+        body:not(.theme-dark) [data-testid="stChatMessage"] {
             background-color: transparent !important; /* Keeps background clean */
         }
         
         /* Target assistant text messages specifically */
-        [data-testid="stChatMessageContent"] {
+        body:not(.theme-dark) [data-testid="stChatMessageContent"] {
             color: #3d1706 !important;
         }
         
         /* Ensure standard markdown elements inside responses match your color */
-        [data-testid="stChatMessageContent"] p, 
-        [data-testid="stChatMessageContent"] li, 
-        [data-testid="stChatMessageContent"] ol {
+        body:not(.theme-dark) [data-testid="stChatMessageContent"] p, 
+        body:not(.theme-dark) [data-testid="stChatMessageContent"] li, 
+        body:not(.theme-dark) [data-testid="stChatMessageContent"] ol {
             color: #3d1706 !important;
-        }
-
-
-        /* --- DARK MODE OVERRIDES (Streamlit Settings Integration) --- */
-        body.theme-dark, 
-        body.theme-dark [data-testid="stAppViewContainer"], 
-        body.theme-dark .stApp, 
-        body.theme-dark button, 
-        body.theme-dark input, 
-        body.theme-dark select, 
-        body.theme-dark textarea {
-            background-color: #3d1706 !important;
-            color: #e9d2b4 !important;
-        }
-        body.theme-dark h1, 
-        body.theme-dark h2, 
-        body.theme-dark h3, 
-        body.theme-dark h4, 
-        body.theme-dark h5, 
-        body.theme-dark h6, 
-        body.theme-dark p, 
-        body.theme-dark span, 
-        body.theme-dark label, 
-        body.theme-dark li, 
-        body.theme-dark ol, 
-        body.theme-dark ul, 
-        body.theme-dark [data-testid="stMarkdownContainer"] p {
-            color: #e9d2b4 !important;
-        }
-        body.theme-dark [data-testid="stBottom"], 
-        body.theme-dark [data-testid="stBottomBlockContainer"] {
-            background-color: #3d1706 !important;
-        }
-        body.theme-dark [data-testid="stSidebar"] {
-            background-color: #2c0f03 !important;
-            border-right: 1px solid #e9d2b433 !important;
-        }
-        body.theme-dark [data-testid="stSidebar"] h1, 
-        body.theme-dark [data-testid="stSidebar"] h2, 
-        body.theme-dark [data-testid="stSidebar"] h3, 
-        body.theme-dark [data-testid="stSidebar"] p, 
-        body.theme-dark [data-testid="stSidebar"] label,
-        body.theme-dark [data-testid="stSidebar"] span {
-            color: #e9d2b4 !important;
-        }
-        body.theme-dark [data-testid="stChatMessageContent"] {
-            color: #e9d2b4 !important;
-        }
-        body.theme-dark [data-testid="stChatMessageContent"] p, 
-        body.theme-dark [data-testid="stChatMessageContent"] li, 
-        body.theme-dark [data-testid="stChatMessageContent"] ol {
-            color: #e9d2b4 !important;
-        }
-        body.theme-dark [data-testid="stChatInput"] {
-            border: 2px solid #e9d2b4 !important;
-            background-color: #4d220f !important;
-        }
-        body.theme-dark [data-testid="stChatInput"] textarea {
-            color: #e9d2b4 !important;
-            caret-color: #e9d2b4 !important;
-        }
-        body.theme-dark [data-testid="stChatInput"] textarea::placeholder {
-            color: rgba(233, 210, 180, 0.7) !important;
         }
     </style>
     """,
@@ -259,8 +211,11 @@ if not st.session_state.messages:
         """
         <style>
             /* Force the main background color and hide scrollbar */
-            html, body, [data-testid="stAppViewContainer"] {
+            body:not(.theme-dark),
+            body:not(.theme-dark) [data-testid="stAppViewContainer"] {
                 background-color: #e9d2b4 !important;
+            }
+            html, body, [data-testid="stAppViewContainer"] {
                 overflow: hidden !important;
                 height: 100vh !important;
             }
@@ -291,7 +246,7 @@ if not st.session_state.messages:
             }
             
             /* Title Typography with !important to prevent Streamlit overrides */
-            .main-title {
+            body:not(.theme-dark) .main-title {
                 color: #3d1706 !important;
                 font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
                 font-size: 2.6rem !important;
@@ -299,7 +254,7 @@ if not st.session_state.messages:
                 margin: 0 0 1vh 0 !important;
                 line-height: 1.2 !important;
             }
-            .sub-title {
+            body:not(.theme-dark) .sub-title {
                 color: #953108 !important;
                 font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
                 font-size: 1.15rem !important;
@@ -340,7 +295,7 @@ if not st.session_state.messages:
             }
             
             /* TARGET STREAMLIT CHAT INPUT CONTAINER FOR PILL SHAPE */
-            [data-testid="stChatInput"] {
+            body:not(.theme-dark) [data-testid="stChatInput"] {
                 border: 2px solid #f87d0f !important;
                 border-radius: 50px !important; /* Forces perfect pill shape */
                 background-color: #ffffff !important;
@@ -350,18 +305,18 @@ if not st.session_state.messages:
             }
             
             /* Make entire inside of the pill full white (removes Streamlit's two-color gray/blue textarea bg) */
-            [data-testid="stChatInput"] div {
+            body:not(.theme-dark) [data-testid="stChatInput"] div {
                 background-color: transparent !important;
                 background: transparent !important;
             }
             
-            [data-testid="stChatInput"]:focus-within {
+            body:not(.theme-dark) [data-testid="stChatInput"]:focus-within {
                 border-color: #f87d0f !important;
                 box-shadow: 0 0 0 0.2rem rgba(248, 125, 15, 0.25) !important;
             }
             
             /* Make sure text input area background stays white inside the pill */
-            [data-testid="stChatInput"] textarea {
+            body:not(.theme-dark) [data-testid="stChatInput"] textarea {
                 background-color: transparent !important;
                 color: #3d1706 !important;
                 font-size: 1.05rem !important;
@@ -388,7 +343,7 @@ if not st.session_state.messages:
                 transform: scale(1.05);
             }
             
-            .footer-hint {
+            body:not(.theme-dark) .footer-hint {
                 position: fixed !important;
                 bottom: 11vh !important; /* Positioned directly below input with clearance */
                 top: auto !important;
@@ -433,35 +388,6 @@ if not st.session_state.messages:
             }
 
 
-            /* --- DARK MODE OVERRIDES FOR WELCOME PAGE (Streamlit Settings Integration) --- */
-            body.theme-dark, 
-            body.theme-dark [data-testid="stAppViewContainer"], 
-            body.theme-dark .stApp {
-                background-color: #3d1706 !important;
-            }
-            body.theme-dark [data-testid="stBottom"] {
-                background-color: #3d1706 !important;
-            }
-            body.theme-dark .main-title {
-                color: #e9d2b4 !important;
-            }
-            body.theme-dark .sub-title {
-                color: #e9d2b4 !important;
-            }
-            body.theme-dark .footer-hint {
-                color: #e9d2b4 !important;
-            }
-            body.theme-dark [data-testid="stChatInput"] {
-                border: 2px solid #e9d2b4 !important;
-                background-color: #4d220f !important;
-            }
-            body.theme-dark [data-testid="stChatInput"] textarea {
-                color: #e9d2b4 !important;
-                caret-color: #e9d2b4 !important;
-            }
-            body.theme-dark [data-testid="stChatInput"] textarea::placeholder {
-                color: rgba(233, 210, 180, 0.7) !important;
-            }
         </style>
         """,
         unsafe_allow_html=True
