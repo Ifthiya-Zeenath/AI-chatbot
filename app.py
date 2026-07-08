@@ -140,6 +140,60 @@ st.markdown(
         body:not(.theme-dark) [data-testid="stChatMessageContent"] ol {
             color: #3d1706 !important;
         }
+
+        /* --- DARK MODE OVERRIDES (Streamlit Settings Integration) --- */
+        body.theme-dark, 
+        body.theme-dark [data-testid="stAppViewContainer"], 
+        body.theme-dark .stApp {
+            background-color: #3d1706 !important;
+        }
+        body.theme-dark [data-testid="stBottom"] {
+            background-color: #3d1706 !important;
+            box-shadow: none !important;
+            border-top: none !important;
+        }
+        body.theme-dark [data-testid="stBottomBlockContainer"] {
+            background-color: #3d1706 !important;
+            padding: 0 !important;
+        }
+        body.theme-dark [data-testid="stSidebar"] {
+            background-color: #2c0f03 !important;
+            border-right: 1px solid #e9d2b433 !important;
+        }
+        body.theme-dark [data-testid="stSidebar"] h1, 
+        body.theme-dark [data-testid="stSidebar"] h2, 
+        body.theme-dark [data-testid="stSidebar"] h3, 
+        body.theme-dark [data-testid="stSidebar"] p, 
+        body.theme-dark [data-testid="stSidebar"] label,
+        body.theme-dark [data-testid="stSidebar"] span {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark h1, 
+        body.theme-dark h2, 
+        body.theme-dark h3, 
+        body.theme-dark h4, 
+        body.theme-dark h5, 
+        body.theme-dark h6, 
+        body.theme-dark p, 
+        body.theme-dark span, 
+        body.theme-dark label, 
+        body.theme-dark li, 
+        body.theme-dark ol, 
+        body.theme-dark ul, 
+        body.theme-dark [data-testid="stMarkdownContainer"] p {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatMessage"] {
+            background-color: transparent !important;
+        }
+        body.theme-dark [data-testid="stChatMessageContent"] {
+            color: #e9d2b4 !important;
+        }
+        body.theme-dark [data-testid="stChatMessageContent"] p, 
+        body.theme-dark [data-testid="stChatMessageContent"] li, 
+        body.theme-dark [data-testid="stChatMessageContent"] ol {
+            color: #e9d2b4 !important;
+        }
     </style>
     """,
     unsafe_allow_html=True
@@ -295,7 +349,7 @@ if not st.session_state.messages:
             }
             
             /* TARGET STREAMLIT CHAT INPUT CONTAINER FOR PILL SHAPE */
-            body:not(.theme-dark) [data-testid="stChatInput"] {
+            [data-testid="stChatInput"] {
                 border: 2px solid #f87d0f !important;
                 border-radius: 50px !important; /* Forces perfect pill shape */
                 background-color: #ffffff !important;
@@ -305,18 +359,18 @@ if not st.session_state.messages:
             }
             
             /* Make entire inside of the pill full white (removes Streamlit's two-color gray/blue textarea bg) */
-            body:not(.theme-dark) [data-testid="stChatInput"] div {
+            [data-testid="stChatInput"] div {
                 background-color: transparent !important;
                 background: transparent !important;
             }
             
-            body:not(.theme-dark) [data-testid="stChatInput"]:focus-within {
+            [data-testid="stChatInput"]:focus-within {
                 border-color: #f87d0f !important;
                 box-shadow: 0 0 0 0.2rem rgba(248, 125, 15, 0.25) !important;
             }
             
             /* Make sure text input area background stays white inside the pill */
-            body:not(.theme-dark) [data-testid="stChatInput"] textarea {
+            [data-testid="stChatInput"] textarea {
                 background-color: transparent !important;
                 color: #3d1706 !important;
                 font-size: 1.05rem !important;
@@ -385,6 +439,21 @@ if not st.session_state.messages:
                     left: calc(50% + 168px) !important;
                     width: calc(100% - 370px) !important;
                 }
+            }
+
+            /* --- DARK MODE OVERRIDES FOR WELCOME PAGE --- */
+            body.theme-dark,
+            body.theme-dark [data-testid="stAppViewContainer"] {
+                background-color: #3d1706 !important;
+            }
+            body.theme-dark .main-title {
+                color: #e9d2b4 !important;
+            }
+            body.theme-dark .sub-title {
+                color: #e9d2b4 !important;
+            }
+            body.theme-dark .footer-hint {
+                color: #e9d2b4 !important;
             }
 
 
